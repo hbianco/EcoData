@@ -7,7 +7,7 @@ Created on Tue Mar 21 13:14:18 2017
 @aim: Implements functions to import, standardise and visualise economic data.
 """
 
-import bloompy as bp
+#import bloompy as bp
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -25,6 +25,8 @@ def PoP(data, **kwargs):
     :param freq: frequency of the series to return.
     :type per: string in list ['D', 'M', 'Q', 'A']
     :type freq: string in list ['D', 'M', 'Q', 'A']
+    :param method: defines the method to perform the period over period transformation.
+    :type method: ['ratio', 'diff']
     """
     #Correspondance tables
     CORRES_B = {'D':1, 'M':21, 'Q':63, 'H':130, 'A':262} #business days
@@ -68,7 +70,7 @@ def PoP(data, **kwargs):
     if meth == 'ratio':
         result = data/data_per-1
     elif meth == 'diff':
-        result = data - data_per-1
+        result = data - data_per
     result.columns = [list(result)[0] + ' ' + CORRES_LABEL[period]]
     # Returns the period over period transformation
     return result
@@ -101,6 +103,7 @@ def scale_data(data, mult=1, lead_lag=0, cum_data=False, freq='D'):
         value = mult*data.tshift(lead_lag)
     return value
 
+        
 
 def graph(*args, **kwargs):
     """
@@ -143,7 +146,15 @@ def graph(*args, **kwargs):
             print(error)
             return
     else:
-        colour = {1:'#4a4a4a', 2:'#951826', 3:'#ea7600', 4:'#007398', 5:'-'}
+        colour = {1:'#4a4a4a',
+                  2:'#951826', 
+                  3:'#ea7600', 
+                  4:'#007398', 
+                  5:'#33cc78',
+                  6:'#f4ee00',
+                  7:'#669999', 
+                  8:'#ff99ff',
+                  9:'#b35900',}
     
     recess = False
     if 'recession' in kwargs:
@@ -224,25 +235,28 @@ def graph(*args, **kwargs):
         
     
 if __name__ == "__main__":
-    spx = bp.getHistoricalData('SPX Index','px last','20010101', \
-                                          periodicity='DAILY')
-    modSpx = PoP(spx, per='a', freq='m')
-    gdp = bp.getHistoricalData('GDP CHWG Index','px last','20010101', \
-                                          periodicity='DAILY')
-    modGdp = PoP(gdp, per='a', freq='m')
-    pmi = bp.getHistoricalData('NAPMPMI Index','px last','20010101', \
-                                          periodicity='DAILY')
-    modPmi = PoP(pmi, per='a', freq='m')
-    
-    cembi = bp.getHistoricalData('JBCDCOMP Index', 'px_last', '20010101', \
-                                periodicity='DAILY')
-    modCembi = PoP(cembi, per='h', freq='m')
-    modCembi2 = PoP(cembi, per='a', freq='m')
-    
-    usd = bp.getHistoricalData('USTW$ Index','px last','20010101', \
-                                          periodicity='DAILY')
-    modUsd = PoP(usd, per='a', freq='m')
-    
-    graph(modPmi,modCembi, modCembi2,\
-          recession=True, multiple_series=True, title='bla')
+    pass
+ 
+#    spx = bp.getHistoricalData('SPX Index','px last','20010101', \
+#                                          periodicity='DAILY')
+#    conv_like(spx, spx)
+#    modSpx = PoP(spx, per='a', freq='m')
+#    gdp = bp.getHistoricalData('GDP CHWG Index','px last','20010101', \
+#                                          periodicity='DAILY')
+#    modGdp = PoP(gdp, per='a', freq='m')
+#    pmi = bp.getHistoricalData('NAPMPMI Index','px last','20010101', \
+#                                          periodicity='DAILY')
+#    modPmi = PoP(pmi, per='a', freq='m')
+#    
+#    cembi = bp.getHistoricalData('JBCDCOMP Index', 'px_last', '20010101', \
+#                                periodicity='DAILY')
+#    modCembi = PoP(cembi, per='h', freq='m')
+#    modCembi2 = PoP(cembi, per='a', freq='m')
+#    
+#    usd = bp.getHistoricalData('USTW$ Index','px last','20010101', \
+#                                          periodicity='DAILY')
+#    modUsd = PoP(usd, per='a', freq='m')
+#    
+#    graph(modPmi,modCembi, modCembi2,\
+#          recession=True, multiple_series=True, title='bla')
     
