@@ -12,6 +12,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_finance import candlestick_ohlc
+import matplotlib.dates as mpld
 import seaborn as sns
 
 RECESSION_DATA = r'P:\Python Scripts\EcoProject/usrecspan.csv'
@@ -136,6 +137,21 @@ def graph(*args, **kwargs):
     
     :param legend: Display legend.
     :type legend: Boolean.
+    
+    :param save_fig: Path and name to save the plot.
+    :type save_fig: str.
+    
+    :param weekdays: Only displays weekdays.
+    :type weekdays: Boolean.
+    
+    :param candle_width: candle width.
+    :type candlewidth: float.
+    
+    :param axe_label: shows axe's labels.
+    :type axe_label: Boolean.
+    
+    :param view_grid: shows grid.
+    :type view_grid: Boolean.
     """
     
     ## Check data
@@ -209,6 +225,27 @@ def graph(*args, **kwargs):
     if 'legend' in kwargs:
         legend = kwargs['legend']
     
+    save = False
+    if 'save_fig' in kwargs:
+        save_path = kwargs['save_fig']
+        save = True
+    
+    weekdays = False
+    if 'weekdays' in kwargs:
+        weekdays = kwargs['weekdays']
+        
+    candle_w = 0.2
+    if 'candle_width' in kwargs:
+        candle_w = kwargs['candle_width']
+    
+    axe_label = True
+    if 'axe_label' in kwargs:
+        axe_label = kwargs['axe_label']
+    
+    view_grid = True
+    if 'view_grid' in kwargs:
+        view_grid = kwargs['view_grid']
+    
     ## Graph creation
     if size is not None:
         fig = plt.figure(figsize=size)
@@ -220,10 +257,13 @@ def graph(*args, **kwargs):
     ax = fig.add_subplot(grid[:rows-n_sub, 0])
     
     #main line
-    if candle:
+    if candle: # handle candlesticks
         if data[0].shape[1]!=5:
             raise IndexError('Need 5 data series. Got {}'.format(data[0].shape[1]))
-        line = candlestick_ohlc(0)
+        if weekdays: # correct for weekend gaps
+            line = weekday_candlestick(ax, data[0].values, width=candle_w)
+        else:
+            line = candlestick_ohlc(ax, data[0].values, width=candle_w)
     else:
         line = plt.plot(data[0], label=data[0].columns[0], color=colour[1]) #base line
         
@@ -239,8 +279,8 @@ def graph(*args, **kwargs):
             axn.set_ylabel(series.columns[0], color=colour[i])
         line += plt.plot(series, colour[i], label=series.columns[0])
         i+=1 #change colour for next series
-    labels = [l.get_label() for l in line] #gets label all together
     if legend:
+        labels = [l.get_label() for l in line] #gets label all together
         plt.legend(line, labels, loc=0)
 
    
@@ -269,7 +309,16 @@ def graph(*args, **kwargs):
                     sns.despine(ax=axn, left=False, right=False) # axis not displayed
             except IndexError:
                 print('no recession during that period')
-
+                
+    # Axe's labels
+    if axe_label==False:
+        ax.axes.get_xaxis().set_visible(False)
+        ax.axes.get_yaxis().set_visible(False)
+    
+    # Grid
+    if view_grid==False:
+        ax.grid(False)
+        
     #Title
     if g_title is not None:
         ax.axes.set_title(g_title)
@@ -292,6 +341,40 @@ def graph(*args, **kwargs):
                             where=(y>=up_lim), facecolor='red', interpolate=True, alpha='0.25')
             subg.fill_between(x, y, dn_lim,\
                             where=(y<=dn_lim), facecolor='green', interpolate=True, alpha='0.25')
+            if axe_label==False:
+                subg.axes.get_xaxis().set_visible(False)
+                subg.axes.get_yaxis().set_visible(False)
+    
+    
+    
+    # Saves generated plot to disk
+    if save:
+        fig.savefig(save_path,  bbox_inches='tight')
+
+
+def weekday_candlestick(ax, data, fmt='%d %b %Y', freq=5, **kwargs):
+    """ Correct for gaps from weekends in candlestick charts. """
+
+    # Check data format
+    if not isinstance(data, np.ndarray):
+        data = np.array(data)
+    
+    # Add new index
+    data_arr = np.hstack(
+        [np.arange(data[:,0].size)[:,np.newaxis], data[:,1:]])
+    ndays = data_arr[:,0]
+
+    # Date format
+    dates = mpld.num2date(data[:,0])
+    date_strings = [date.strftime(fmt) for date in dates]
+
+    # Plot candlestick chart
+    candlestick_ohlc(ax, data_arr, **kwargs)
+
+    # Format x axis
+    ax.set_xticks(ndays[::freq])
+    ax.set_xticklabels(date_strings[::freq], rotation=45, ha='right')
+    ax.set_xlim(ndays.min()-1, ndays.max()+1)
 
 if __name__ == "__main__":
     pass
