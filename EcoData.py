@@ -31,7 +31,7 @@ def PoP(data, **kwargs):
     :param method: defines the method to perform the period over period transformation.
     :type method: ['ratio', 'diff']
     """
-    
+   
     # Correspondance tables
     CORRES_B = {'D':1, 'M':21, 'Q':63, 'H':130, 'A':262} #business days
     CORRES_D = {'D':1, 'M':30, 'Q':91, 'H':182, 'A':365} #calendar days
@@ -128,32 +128,32 @@ def graph(*args, **kwargs):
    
     :param title: Gives a title to the chart.
     :type title: str.
-    
+   
     :param subgraph: Adds a subgraph to the chart.
     :type subgraph: pandas Series.
-    
+   
     :param candle: Change graph type to candlesticks.
     :type candle: Boolean.
-    
+   
     :param legend: Display legend.
     :type legend: Boolean.
-    
+   
     :param save_fig: Path and name to save the plot.
     :type save_fig: str.
-    
+   
     :param weekdays: Only displays weekdays.
     :type weekdays: Boolean.
-    
+   
     :param candle_width: candle width.
     :type candlewidth: float.
-    
+   
     :param axe_label: shows axe's labels.
     :type axe_label: Boolean.
-    
+   
     :param view_grid: shows grid.
     :type view_grid: Boolean.
     """
-    
+   
     ## Check data
     data = [pd.DataFrame(data_set) for data_set in args]
     try:
@@ -190,8 +190,8 @@ def graph(*args, **kwargs):
             'recession'], converters={'date':lambda x: pd.to_datetime(x,\
             dayfirst=True)})
             #rec_data = rec_data.asfreq(data[0].index.freqstr)
-            recess = True   
-    
+            recess = True  
+   
     extra_ax = False
     sns.set_style('ticks', {'axes.grid': True})
     if 'multiple_series' in kwargs:
@@ -216,36 +216,42 @@ def graph(*args, **kwargs):
             n_sub = 1
         elif isinstance(sub, (list, tuple)):
             n_sub += len(sub)
-      
+     
     candle = False
     if 'candle' in kwargs:
         candle = kwargs['candle']
-        
+       
     legend = True
     if 'legend' in kwargs:
         legend = kwargs['legend']
-    
+   
     save = False
     if 'save_fig' in kwargs:
         save_path = kwargs['save_fig']
         save = True
-    
+   
     weekdays = False
     if 'weekdays' in kwargs:
         weekdays = kwargs['weekdays']
-        
+       
     candle_w = 0.2
     if 'candle_width' in kwargs:
         candle_w = kwargs['candle_width']
-    
+   
     axe_label = True
     if 'axe_label' in kwargs:
         axe_label = kwargs['axe_label']
-    
+   
     view_grid = True
     if 'view_grid' in kwargs:
         view_grid = kwargs['view_grid']
-    
+   
+    trading_signal = None
+    if 'trading_signal' in kwargs:
+        trading_signal = kwargs['trading_signal'].copy()
+        if isinstance(trading_signal, pd.DataFrame):
+            trading_signal = pd.Series(trading_signal)
+   
     ## Graph creation
     if size is not None:
         fig = plt.figure(figsize=size)
@@ -253,9 +259,9 @@ def graph(*args, **kwargs):
         fig = plt.figure()
    
     rows = 5
-    grid = plt.GridSpec(rows, 1)   
+    grid = plt.GridSpec(rows, 1)  
     ax = fig.add_subplot(grid[:rows-n_sub, 0])
-    
+   
     #main line
     if candle: # handle candlesticks
         if data[0].shape[1]!=5:
@@ -266,7 +272,27 @@ def graph(*args, **kwargs):
             line = candlestick_ohlc(ax, data[0].values, width=candle_w)
     else:
         line = plt.plot(data[0], label=data[0].columns[0], color=colour[1]) #base line
-        
+       
+    # Displays trading signals
+    if trading_signal is not None:
+        if candle:
+            dat = pd.Series(data[0].iloc[:,0])
+        if isinstance(data[0], pd.DataFrame):
+            dat = pd.Series(data[0].iloc[:,0])
+        else:
+            dat = data[0]
+        y_range = ax.get_ylim()
+       
+        sig = dat.copy()
+        trading_signal[trading_signal==0] = np.nan
+        b_sig = trading_signal[trading_signal==1]
+        s_sig = trading_signal[trading_signal==-1]
+        buy_sig = b_sig * -0.1 * (y_range[1] - y_range[0]) + sig
+        sell_sig = s_sig * -0.1 * (y_range[1] - y_range[0]) + sig
+        plt.plot(buy_sig, 'g^')
+        plt.plot(sell_sig, 'rv')
+   
+    # Multiple series
     if extra_ax:
         ax.set_ylabel(data[0].columns[0], color=colour[1])
     i = 2 # counter to handle colours
@@ -309,16 +335,16 @@ def graph(*args, **kwargs):
                     sns.despine(ax=axn, left=False, right=False) # axis not displayed
             except IndexError:
                 print('no recession during that period')
-                
+   
     # Axe's labels
     if axe_label==False:
         ax.axes.get_xaxis().set_visible(False)
         ax.axes.get_yaxis().set_visible(False)
-    
+   
     # Grid
     if view_grid==False:
         ax.grid(False)
-        
+       
     #Title
     if g_title is not None:
         ax.axes.set_title(g_title)
@@ -344,9 +370,9 @@ def graph(*args, **kwargs):
             if axe_label==False:
                 subg.axes.get_xaxis().set_visible(False)
                 subg.axes.get_yaxis().set_visible(False)
-    
-    
-    
+   
+   
+   
     # Saves generated plot to disk
     if save:
         fig.savefig(save_path,  bbox_inches='tight')
@@ -358,7 +384,7 @@ def weekday_candlestick(ax, data, fmt='%d %b %Y', freq=5, **kwargs):
     # Check data format
     if not isinstance(data, np.ndarray):
         data = np.array(data)
-    
+   
     # Add new index
     data_arr = np.hstack(
         [np.arange(data[:,0].size)[:,np.newaxis], data[:,1:]])
@@ -378,7 +404,6 @@ def weekday_candlestick(ax, data, fmt='%d %b %Y', freq=5, **kwargs):
 
 if __name__ == "__main__":
     pass
-
  
 #    spx = bp.getHistoricalData('SPX Index','px last','20010101', \
 #                                          periodicity='DAILY')
