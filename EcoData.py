@@ -11,8 +11,8 @@ Created on Tue Mar 21 13:14:18 2017
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_finance import candlestick_ohlc
-import matplotlib.dates as mpld
+from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 import seaborn as sns
 
 RECESSION_DATA = r'P:\Python Scripts\EcoProject/usrecspan.csv'
@@ -141,8 +141,8 @@ def graph(*args, **kwargs):
     :param save_fig: Path and name to save the plot.
     :type save_fig: str.
    
-    :param weekdays: Only displays weekdays.
-    :type weekdays: Boolean.
+    :param has_dates: Input data have dates. Used only for candle graph. True by default.
+    :type has_dates: Boolean.
    
     :param candle_width: candle width.
     :type candlewidth: float.
@@ -152,6 +152,9 @@ def graph(*args, **kwargs):
    
     :param view_grid: shows grid.
     :type view_grid: Boolean.
+    
+    :param close_plot: Deletes the figure. Use for memory control. Default is False.
+    :type close_plot: Boolean.
     """
    
     ## Check data
@@ -220,7 +223,11 @@ def graph(*args, **kwargs):
     candle = False
     if 'candle' in kwargs:
         candle = kwargs['candle']
-       
+    
+    has_dates = True
+    if 'has_dates' in kwargs:
+        has_dates = kwargs['has_dates']
+    
     legend = True
     if 'legend' in kwargs:
         legend = kwargs['legend']
@@ -229,10 +236,6 @@ def graph(*args, **kwargs):
     if 'save_fig' in kwargs:
         save_path = kwargs['save_fig']
         save = True
-   
-    weekdays = False
-    if 'weekdays' in kwargs:
-        weekdays = kwargs['weekdays']
        
     candle_w = 0.2
     if 'candle_width' in kwargs:
@@ -251,6 +254,10 @@ def graph(*args, **kwargs):
         trading_signal = kwargs['trading_signal'].copy()
         if isinstance(trading_signal, pd.DataFrame):
             trading_signal = pd.Series(trading_signal)
+    
+    close_plot = False
+    if 'close_plot' in kwargs:
+        close_plot = kwargs['close_plot']
    
     ## Graph creation
     if size is not None:
@@ -264,12 +271,9 @@ def graph(*args, **kwargs):
    
     #main line
     if candle: # handle candlesticks
-        if data[0].shape[1]!=5:
-            raise IndexError('Need 5 data series. Got {}'.format(data[0].shape[1]))
-        if weekdays: # correct for weekend gaps
-            line = weekday_candlestick(ax, data[0].values, width=candle_w)
-        else:
-            line = candlestick_ohlc(ax, data[0].values, width=candle_w)
+        if data[0].shape[1]!=4 and data[0].shape[1]!=5:
+            raise IndexError('Need 4/5 data series. Got {}'.format(data[0].shape[1]))
+        line, _ = candle_graph(ax, data[0], width=candle_w, has_dates=has_dates)
     else:
         line = plt.plot(data[0], label=data[0].columns[0], color=colour[1]) #base line
        
@@ -352,7 +356,10 @@ def graph(*args, **kwargs):
     # Adds subplot
     if sub is not None:
         for i in range(n_sub):
-            subg = fig.add_subplot(grid[rows- n_sub + i,0], sharex=ax)
+            if candle:
+                subg = fig.add_subplot(grid[rows- n_sub + i,0])
+            else:
+                subg = fig.add_subplot(grid[rows- n_sub + i,0], sharex=ax)
             subg.plot(sub)
             # Oscillator formating
             up_lim = np.array([70]*len(sub.values))
@@ -376,31 +383,96 @@ def graph(*args, **kwargs):
     # Saves generated plot to disk
     if save:
         fig.savefig(save_path,  bbox_inches='tight')
+    if close_plot:
+        plt.close('all')
+        
+    
+def candle_graph(ax, data, colorup='k', colordown='r', alpha=1.0, \
+                 width=.5, freq=10, has_dates=True):
+    """
+    Creates candle graph for financial series.
+    Input:
+    ======
+    :param data <pd.DataFrame>/<np.array>: open high low close of series.
+    
+    """
+    
+    if isinstance(data, pd.DataFrame):
+        if has_dates:
+            dates = data.index.strftime('%d-%b-%Y')
+        data = data.as_matrix()
+    elif isinstance(data, np.ndarray):
+        if has_dates:
+            dates = data[:,0]
+            data = data[:,1:]
+    
+    data = np.c_[np.arange(1,data[:,0].size+1), data[:,:]]
+    
+    center = width / 2.0
+    
+    lines = []
+    patches = []
+    for d in data:
+        t, op, high, low, close = d[:5]
+    
+        if close >= op:
+            color = colorup
+            lower = op
+            height = close - op
+        else:
+            color = colordown
+            lower = close
+            height = op - close
+    
+        vline = Line2D(
+            xdata=(t, t), ydata=(low, high),
+            color=color,
+            linewidth=0.5,
+            antialiased=True,
+        )
+    
+        rect = Rectangle(
+            xy=(t - center, lower),
+            width=width,
+            height=height,
+            facecolor=color,
+            edgecolor=color,
+        )
+        rect.set_alpha(alpha)
+    
+        lines.append(vline)
+        patches.append(rect)
+        ax.add_line(vline)
+        ax.add_patch(rect)
+    ax.autoscale_view()
+    if has_dates:
+        ax.set_xticklabels(dates[::freq])
+    
+    return lines, patches
+
+def period_ohlc(df, freq='w', method='pad'):
+    """
+    Transform OHLC data into lower frequency OHLC data.
+    """
+    
+    df.columns=['open','high','low','price']
+    #close
+    c = df['price'].asfreq(freq, method=method)
+    idx = c.index.values
+    idx = np.insert(idx, 0, df.index[0])
+    c = c.values
+    
+    #high, low, open
+    h = [df.loc[idx[i]:idx[i+1],'high'].max() for i in range(idx.size-1)]
+    l = [df.loc[idx[i]:idx[i+1],'low'].min() for i in range(idx.size-1)]
+    o = [df.loc[df[idx[i]:idx[i+1]].first_valid_index(),'open'] for i in range(idx.size-1)]
+    
+    #gather results in a DataFrame.
+    ret=pd.DataFrame({'open':o , 'high':h, 'low':l, 'price':c}, index=idx[1:])
+    
+    return ret[df.columns]
 
 
-def weekday_candlestick(ax, data, fmt='%d %b %Y', freq=5, **kwargs):
-    """ Correct for gaps from weekends in candlestick charts. """
-
-    # Check data format
-    if not isinstance(data, np.ndarray):
-        data = np.array(data)
-   
-    # Add new index
-    data_arr = np.hstack(
-        [np.arange(data[:,0].size)[:,np.newaxis], data[:,1:]])
-    ndays = data_arr[:,0]
-
-    # Date format
-    dates = mpld.num2date(data[:,0])
-    date_strings = [date.strftime(fmt) for date in dates]
-
-    # Plot candlestick chart
-    candlestick_ohlc(ax, data_arr, **kwargs)
-
-    # Format x axis
-    ax.set_xticks(ndays[::freq])
-    ax.set_xticklabels(date_strings[::freq], rotation=45, ha='right')
-    ax.set_xlim(ndays.min()-1, ndays.max()+1)
 
 if __name__ == "__main__":
     pass
