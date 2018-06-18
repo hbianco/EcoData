@@ -101,10 +101,10 @@ def scale_data(data, mult=1, lead_lag=0, cum_data=False, freq='D'):
         data = data.to_frame(data.name)
    
     if cum_data:
-        value = mult*data.tshift(lead_lag)
+        value = mult*data.tshift(lead_lag, freq=freq)
         value = value.cumsum()
     else:
-        value = mult*data.tshift(lead_lag)
+        value = mult*data.tshift(lead_lag, freq=freq)
     return value
  
        
@@ -215,10 +215,11 @@ def graph(*args, **kwargs):
     n_sub = 0
     if 'subgraph' in kwargs:
         sub = kwargs['subgraph']
-        if isinstance(sub, pd.DataFrame) or isinstance(sub, pd.Series):
-            n_sub = 1
-        elif isinstance(sub, (list, tuple)):
-            n_sub += len(sub)
+        if sub is not None:
+            if isinstance(sub, pd.DataFrame) or isinstance(sub, pd.Series):
+                n_sub = 1
+            elif isinstance(sub, (list, tuple)):
+                n_sub += len(sub)
      
     candle = False
     if 'candle' in kwargs:
@@ -231,6 +232,10 @@ def graph(*args, **kwargs):
     legend = True
     if 'legend' in kwargs:
         legend = kwargs['legend']
+    
+    legend_loc = 0
+    if 'legend_loc' in kwargs:
+        legend_loc = kwargs['legend_loc']
    
     save = False
     if 'save_fig' in kwargs:
@@ -311,7 +316,7 @@ def graph(*args, **kwargs):
         i+=1 #change colour for next series
     if legend:
         labels = [l.get_label() for l in line] #gets label all together
-        plt.legend(line, labels, loc=0)
+        plt.legend(line, labels, loc=legend_loc)
 
    
     # Displays recessions as shaded area
