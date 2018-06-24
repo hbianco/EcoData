@@ -405,7 +405,7 @@ def candle_graph(ax, data, colorup='k', colordown='r', alpha=1.0, \
     if isinstance(data, pd.DataFrame):
         if has_dates:
             dates = data.index.strftime('%d-%b-%Y')
-        data = data.as_matrix()
+        data = data.values
     elif isinstance(data, np.ndarray):
         if has_dates:
             dates = data[:,0]

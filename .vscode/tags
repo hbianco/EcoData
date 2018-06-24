@@ -1,0 +1,13 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+EcoData.py	../EcoData.py	1;"	kind:file	line:1
+PoP	../EcoData.py	/^def PoP(data, **kwargs):$/;"	kind:function	line:20
+RECESSION_DATA	../EcoData.py	/^RECESSION_DATA = r'P:\\Python Scripts\\EcoProject\/usrecspan.csv'$/;"	kind:variable	line:18
+candle_graph	../EcoData.py	/^                 width=.5, freq=10, has_dates=True):$/;"	kind:function	line:396
+graph	../EcoData.py	/^def graph(*args, **kwargs):$/;"	kind:function	line:112
+period_ohlc	../EcoData.py	/^def period_ohlc(df, freq='w', method='pad'):$/;"	kind:function	line:458
+scale_data	../EcoData.py	/^def scale_data(data, mult=1, lead_lag=0, cum_data=False, freq='D'):$/;"	kind:function	line:83
