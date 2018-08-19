@@ -334,8 +334,6 @@ def graph(*args, **kwargs):
             for col in range(candle_ma.shape[1]):
                 c_ma += [candle_ma.iloc[:,col].values]
                 c_name += [candle_ma.iloc[:,col].name]
-        #add new axe
-        #ax_c = plt.axes()
         for s_name, ma in zip(c_name,c_ma):
             ax.plot(np.arange(len(ma)),ma, colour[i], label=s_name)
             i+=1 #change colour for next series
