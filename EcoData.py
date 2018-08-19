@@ -145,7 +145,10 @@ def graph(*args, **kwargs):
     :type has_dates: Boolean.
    
     :param candle_width: candle width.
-    :type candlewidth: float.
+    :type candle_width: float.
+
+    :param candle_ma: candle moving averages.
+    :type candle_ma: list of moving average pandas.Series.
    
     :param axe_label: shows axe's labels.
     :type axe_label: Boolean.
@@ -246,6 +249,10 @@ def graph(*args, **kwargs):
     if 'candle_width' in kwargs:
         candle_w = kwargs['candle_width']
    
+    candle_ma = None
+    if 'candle_ma' in kwargs:
+        candle_ma = kwargs['candle_ma']
+
     axe_label = True
     if 'axe_label' in kwargs:
         axe_label = kwargs['axe_label']
@@ -318,6 +325,20 @@ def graph(*args, **kwargs):
         labels = [l.get_label() for l in line] #gets label all together
         plt.legend(line, labels, loc=legend_loc)
 
+    # Candle moving averages
+    if candle_ma is not None:
+        i = 1 # counter to handle colours
+        if isinstance(candle_ma, pd.DataFrame):
+            c_ma = []
+            c_name = []
+            for col in range(candle_ma.shape[1]):
+                c_ma += [candle_ma.iloc[:,col].values]
+                c_name += [candle_ma.iloc[:,col].name]
+        #add new axe
+        #ax_c = plt.axes()
+        for s_name, ma in zip(c_name,c_ma):
+            ax.plot(np.arange(len(ma)),ma, colour[i], label=s_name)
+            i+=1 #change colour for next series
    
     # Displays recessions as shaded area
     if recess:
@@ -400,6 +421,9 @@ def candle_graph(ax, data, colorup='k', colordown='r', alpha=1.0, \
     ======
     :param data <pd.DataFrame>/<np.array>: open high low close of series.
     
+    Ouput:
+    ======
+    Returns 
     """
     
     if isinstance(data, pd.DataFrame):
