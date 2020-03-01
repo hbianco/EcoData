@@ -113,6 +113,7 @@ def graph(*args, **kwargs):
     """
     Graphs pandas DataFrame that are passed through.
     Allows overlays of recession periods.
+    Data are passed as a variables without names, not in a list format.
    
     :param data: input data as a pandas DataFrame.
     :type data: pandas DataFrame.
@@ -266,7 +267,19 @@ def graph(*args, **kwargs):
         trading_signal = kwargs['trading_signal'].copy()
         if isinstance(trading_signal, pd.DataFrame):
             trading_signal = pd.Series(trading_signal)
-    
+
+    local_high_low = None
+    if 'local_high_low' in kwargs:
+        local_high_low = kwargs['local_high_low'].copy()
+        if isinstance(local_high_low, dict):
+            local_high_low = pd.DataFrame(local_high_low, columns=['highs', 'lows'])
+            if local_high_low.shape[0]!=data[0].shape[0]:
+                local_high_low = local_high_low.loc[data[0].index, :]
+
+    return_as_numpy = False
+    if 'return_as_numpy' in kwargs:
+        return_as_numpy = kwargs['return_as_numpy']
+
     close_plot = False
     if 'close_plot' in kwargs:
         close_plot = kwargs['close_plot']
@@ -307,7 +320,21 @@ def graph(*args, **kwargs):
         sell_sig = s_sig * -0.1 * (y_range[1] - y_range[0]) + sig
         plt.plot(buy_sig, 'g^')
         plt.plot(sell_sig, 'rv')
-   
+
+    # Displays local extrema
+    if local_high_low is not None:
+        if candle:
+            dat = pd.Series(data[0].iloc[:,0])
+        if isinstance(data[0], pd.DataFrame):
+            dat = pd.Series(data[0].iloc[:,0])
+        else:
+            dat = data[0]
+
+        local_high_low.index = dat.index
+
+        plt.plot(local_high_low['highs'], 'bv')
+        plt.plot(local_high_low['lows'], 'b^')
+
     # Multiple series
     if extra_ax:
         ax.set_ylabel(data[0].columns[0], color=colour[1])
@@ -395,15 +422,13 @@ def graph(*args, **kwargs):
             x = sub.index.values
             y = sub.values.flatten()
             subg.fill_between(x, up_lim, y, \
-                            where=(y>=up_lim), facecolor='red', interpolate=True, alpha='0.25')
+                            where=y>=up_lim, facecolor='#FF0000', interpolate=True, alpha='0.25')
             subg.fill_between(x, y, dn_lim,\
-                            where=(y<=dn_lim), facecolor='green', interpolate=True, alpha='0.25')
+                            where=y<=dn_lim, facecolor='green', interpolate=True, alpha='0.25')
             if axe_label==False:
                 subg.axes.get_xaxis().set_visible(False)
                 subg.axes.get_yaxis().set_visible(False)
-   
-   
-   
+
     # Saves generated plot to disk
     if save:
         fig.savefig(save_path,  bbox_inches='tight')
