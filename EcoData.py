@@ -172,13 +172,10 @@ def graph(*args, **kwargs):
     ## Deal with kwargs
     if 'colour' in kwargs:
         if len(kwargs['colour']) != len(args):
-            raise Exception('The colour provided should be of same lenght\
-            as the data provided')
-        try:
             colour = kwargs['colour']
-        except Exception as error:
-            print(error)
-            return
+            colour = {(i+1):colour[i%len(colour)] for i in range(len(args))}
+        else:
+            colour = kwargs['colour']
     else:
         colour = {1:'#4a4a4a',
                   2:'#951826',
@@ -188,7 +185,16 @@ def graph(*args, **kwargs):
                   6:'#f4ee00',
                   7:'#669999',
                   8:'#ff99ff',
-                  9:'#b35900',}
+                  9:'#b35900',
+                  10:'#355C7D',
+                  11:'#6C5B7B',
+                  12:'#C06C84',
+                  13:'#99B898',
+                  14:'#2A363B',
+                  15:'#E8175D',
+                  16:'#2F9599',
+                  17:'#45ADA8',
+        }
    
     recess = False
     if 'recession' in kwargs:
